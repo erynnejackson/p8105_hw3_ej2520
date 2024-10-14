@@ -1,0 +1,7 @@
+---
+title: "p8105_hw3_ej2520"
+author: "Erynne Jackson"
+date: "2024-10-14"
+output: github_document
+---
+
