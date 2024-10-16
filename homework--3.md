@@ -91,3 +91,31 @@ hex + ridge
     ## Picking joint bandwidth of 3.76
 
 <img src="homework--3_files/figure-gfm/unnamed-chunk-3-1.png" width="90%" />
+
+## PROBLEM 2: Accelometer Dataset
+
+``` r
+demo_df = read_csv("nhanes_covar.csv", 
+ col_types = cols("numeric", "character", "numeric", "numeric", "character"))|>
+  janitor::clean_names() |> 
+  rename(SEQN = x1, sex = x1_male, age = x3, BMI = x4, education = x1_less_than_high_school) |>
+  mutate(
+    sex = replace(sex, sex ==1, "male")) |> 
+  mutate( 
+    sex = replace(sex, sex==2, "female")) |>
+  mutate( 
+    education = replace(education, education == 1, "Less than high school")) |>
+  mutate(
+    education = replace(education, education == 2, "High school equivalent")) |> 
+  mutate(
+    education = replace(education, education ==3, "More than high school"))
+```
+
+    ## New names:
+    ## • `` -> `...1`
+    ## • `` -> `...3`
+    ## • `` -> `...4`
+
+``` r
+demo_df <- demo_df[-c(1:4),]
+```
