@@ -1,0 +1,88 @@
+---
+title: "p8105_hw3_ej2520"
+author: "Erynne Jackson"
+date: "2024-10-14"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggridges)
+library(patchwork)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE, 
+  fig.width = 8, 
+  fig.height = 6, 
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis", 
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+
+```
+
+## PROBLEM 1: Inspecting the "ny_noaa" Dataset
+
+```{r Loading Dataset}
+data("ny_noaa")
+```
+
+This dataset contains 2,595,176 observations and 7 variables. The variables include station id, date, precipitation, snowfall, snow depth, and the minimum and maximum temperatures. Next, we are going to create separate variables for year, month, and day and make are that the variables are in reasonable units. 
+
+
+0 is the most commonly observed values for snowfall. 
+
+``` {r}
+ny_noaa %>% 
+  count(snow) %>%
+  arrange(desc(n))
+
+ny_noaa = 
+  ny_noaa %>% 
+  separate(date, into = c("year", "month", "day"), convert = TRUE) %>% 
+  mutate(
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin))
+```
+
+Now, we are creating a two-panel plot showing the average max temperature in January and July in each station across the years. The mean temperature in January is much lower than the mean temperatures in July. The stations seem to follow similar trends in temperature across the years, in the given month. We do see a few outliers in the late 1980s across January and July. 
+
+```{r}
+ny_noaa %>% 
+  group_by(id, year, month) %>% 
+  filter(month %in% c(1, 7)) %>% 
+  summarize(mean_tmax = mean(tmax, na.rm = TRUE, color = id)) %>% 
+  ggplot(aes(x = year, y = mean_tmax, group = id)) + geom_point() + geom_path() +
+  facet_grid(~month) +
+  labs(title = "Mean monthly temperature for each station across years for January and July")
+
+```
+
+Below is the two-panel plot showing the minimum and maximum temperatures for the full dataset and the plot showing the distribution of snowfall values greater than 0 and less than 100 separately by each year. 
+
+```{r}
+hex = 
+  ny_noaa %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex()
+
+ridge = 
+  ny_noaa %>% 
+  filter(snow < 100, snow > 0) %>%
+  ggplot(aes(x = snow, y = as.factor(year))) + 
+  geom_density_ridges()
+
+hex + ridge
+
+```
