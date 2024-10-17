@@ -92,9 +92,11 @@ hex + ridge
 ```{r Loading and Tidying Participant Demographics}
 
 demo_df = read_csv("nhanes_covar.csv", 
- col_types = cols("numeric", "character", "numeric", "numeric", "character"))|>
+ col_types = cols("numeric", "character", "numeric", "numeric", "character"),
+ na = c(".", "NA", ""))|>
   janitor::clean_names() |> 
   rename(SEQN = x1, sex = x1_male, age = x3, BMI = x4, education = x1_less_than_high_school) |>
+  filter(age >= 21) |> 
   mutate(
     sex = replace(sex, sex ==1, "male")) |> 
   mutate( 
@@ -111,3 +113,109 @@ demo_df = read_csv("nhanes_covar.csv",
 demo_df <- demo_df[-c(1:4),]
 
 ```
+
+Now, we are going to clean and tidy the Accelerometer dataset. 
+
+```{r Accelerometer Dataset}
+
+accel_df = read_csv("nhanes_accel.csv", 
+  na = c(".", "NA", "")) |>
+  pivot_longer(
+    min1:min1440, 
+    names_to = "minutes",
+    names_prefix = "min", 
+    values_to = "MIMS_unit"
+  )
+```
+
+Merging participant and accelerometer dataset. 
+```{r}
+anti_join(demo_df, accel_df, by ="SEQN")
+anti_join(accel_df, demo_df, by ="SEQN")
+
+gbb_df = 
+full_join(demo_df, accel_df, by = "SEQN")
+```
+
+Creating table for education by sex and visualization of age distribution for men and women in each education category. 
+```{r}
+
+gbb_df |> 
+  group_by(sex, education) |> 
+  summarize(n_obs = n())
+
+
+gbb_df |> 
+  ggplot(aes( x =education , y = age)) +
+  geom_point(alpha = .5) + 
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ sex)
+ 
+```
+
+We are creating the total_activity variable and plotting by total activity and age. 
+```{r}
+
+total_activity = gbb_df |> 
+  group_by(SEQN) |> 
+  summarize(total_activity = sum(MIMS_unit, na.rm = TRUE))
+
+
+gbb_df |>
+  group_by(SEQN, education, age,sex) |>
+  summarize(total_activity = sum(MIMS_unit, na.rm = TRUE))|>
+  ggplot(aes(x = age, y = total_activity, color = sex)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+  facet_grid(~education) 
+
+```
+## PROBLEM 3: CITI BIKE
+
+```{r}
+
+jan2020_df = read_csv("Jan 2020 Citi.csv") |> 
+  mutate(
+    date = "jan2020")
+ 
+jan2024_df = read_csv("Jan 2024 Citi.csv") |> 
+  mutate(
+    date = "jan2024"
+  )
+
+jul2020_df = read_csv("July 2020 Citi.csv") |> 
+  mutate(
+    date = "jul2020"
+  )
+
+jul2024_df = read_csv("July 2024 Citi.csv") |>
+  mutate(
+    date = "jul2024"
+  )
+
+citi_bike_df <- bind_rows(jan2020_df, jan2024_df, jul2020_df, jul2024_df)
+
+
+```
+
+Below, we created a table showing the total number of rides in each combination of year and month, separating electric bike and classic bike. In January of 2020, there was significantly more classic bike riders than electric bike riders. By July of 2020, the number of electric bike rides increased from 3 to 935 riders. In January 2024, the number of electric riders surpassed the number of classic riders. By July of 2024, the number of electric riders was almost double that of classic riders. 
+
+```{r}
+
+table_bike = citi_bike_df |> 
+  group_by(date, rideable_type) |>
+  summarise(n_obs = n())
+
+```
+
+Restricting data to starting station in July 2024. 
+```{r}
+
+table_pop = citi_bike_df |>
+  group_by(date, rideable_type, start_station_name) |> 
+  filter(date == "jul2024") |>
+  summarise(n_obs = n())
+
+```
+
+
